@@ -40,12 +40,12 @@ public class TokenService {
             return Jwts.parser()
                     .verifyWith(key)
                     .build()
-                    .parseSignedClaims(token) // Se o token for falso ou expirado, quebra aqui!
+                    .parseSignedClaims(token)
                     .getPayload()
-                    .getSubject(); // Retorna o email do usuário que estava guardado no token
+                    .getSubject();
 
         } catch (JwtException exception) {
-            return ""; // Retorna vazio se der qualquer problema
+            return "";
         }
     }
 }

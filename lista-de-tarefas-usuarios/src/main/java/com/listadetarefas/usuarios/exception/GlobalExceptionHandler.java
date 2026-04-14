@@ -33,7 +33,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErroResposta> tratarErroGenerico(Exception exception) {
-        exception.printStackTrace();
         return criarResposta(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro interno inesperado.", null);
     }
 
