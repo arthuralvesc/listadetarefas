@@ -1,0 +1,6 @@
+.env
+# Ignorar pastas de compilação dentro dos subprojetos
+**/target/
+**/.idea/
+**/*.iml
+**/bin/

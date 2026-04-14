@@ -1,0 +1,34 @@
+### Listar TODAS as tarefas do Usuário 1 (Sem filtros)
+GET http://localhost:8080/tarefas
+Accept: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJsaXN0YS1kZS10YXJlZmFzLWFwaSIsInN1YiI6ImFydGh1ckB0ZXN0ZS5jb20iLCJpZCI6NSwiaWF0IjoxNzc2MTI4NDA0LCJleHAiOjE3NzYxMzU2MDR9.PW9lBxxswyz9gUlcIDawjURBjlpMdrtbvHmbHzIy4bA
+
+
+
+
+### (Bônus) Listar apenas as tarefas ALTA do Usuário 1
+GET http://localhost:8080/tarefas?usuarioId=2&prioridade=MEDIA
+Accept: application/json
+
+### Criar Tarefa - Usuário 1 (Válido)
+POST http://localhost:8080/tarefas
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJsaXN0YS1kZS10YXJlZmFzLWFwaSIsInN1YiI6ImFydGh1ckB0ZXN0ZS5jb20iLCJpZCI6NSwiaWF0IjoxNzc2MTI4NDA0LCJleHAiOjE3NzYxMzU2MDR9.PW9lBxxswyz9gUlcIDawjURBjlpMdrtbvHmbHzIy4bA
+
+
+
+{
+  "nome": "Tarefa Teste",
+  "prioridade": "ALTA"
+}
+
+### Cenário 2: Criar tarefa com Usuário Inválido (Fantasma)
+# Este teste deve retornar 404 Not Found com o seu ErroResposta customizado
+POST http://localhost:8080/tarefas
+Content-Type: application/json
+
+{
+  "nome": "Tarefa para usuário inexistente",
+  "prioridade": "BAIXA",
+  "usuarioId": 999
+}

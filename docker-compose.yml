@@ -1,0 +1,67 @@
+services:
+  db:
+    container_name: postgres-lista-de-tarefas
+    image: postgres:latest
+    restart: unless-stopped
+    environment:
+      # Variáveis que o container do Postgres usa para se auto-configurar
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # O banco 'postgres' é o banco padrão para conexão inicial
+      POSTGRES_DB: postgres 
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ./init-db:/docker-entrypoint-initdb.d 
+    ports:
+      - "5432:5432" # Porta padrão para facilitar o acesso local
+    networks:
+      - lista-de-tarefas-network
+
+  usuarios:
+    build:
+      context: ./lista-de-tarefas-usuarios
+      dockerfile: Dockerfile
+    container_name: usuarios
+    # Mantemos os ports para o Nginx conseguir falar com o container
+    ports:
+      - "8081:8080"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME_USUARIOS=${DB_NAME_USUARIOS}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - JPA_DDL_AUTO=${JPA_DDL_AUTO}
+    depends_on:
+      - db
+    networks:
+      - lista-de-tarefas-network
+
+  tarefas:
+    build:
+      context: ./lista-de-tarefas
+      dockerfile: Dockerfile
+    container_name: tarefas
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME_TAREFAS=${DB_NAME_TAREFAS}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - API_USUARIOS_URL=${API_USUARIOS_URL}
+      - JPA_DDL_AUTO=${JPA_DDL_AUTO}
+    depends_on:
+      - db
+    networks:
+      - lista-de-tarefas-network
+
+networks:
+  lista-de-tarefas-network:
+    driver: bridge
+
+volumes:
+  pgdata:

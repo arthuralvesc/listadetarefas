@@ -1,0 +1,23 @@
+### Criar um novo usuário
+POST http://localhost:8081/usuarios
+Content-Type: application/json
+
+{
+  "nome": "Arthur Alves Carvalho",
+  "email": "arthur@teste.com",
+  "senha": "arthur"
+}
+
+### Buscar Usuário 1 (Sem Token)
+GET http://localhost:8081/usuarios
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJsaXN0YS1kZS10YXJlZmFzLWFwaSIsInN1YiI6InRlc3RlM0B0ZXN0ZS5jb20iLCJpZCI6NCwiaWF0IjoxNzc2MTI2Njg0LCJleHAiOjE3NzYxMzM4ODR9.Rr51UdtvzByFQP_GcSVGjwI69Dnz0emy3DuI_omuEjY
+
+
+### Fazer Login
+POST http://localhost:8081/auth/login
+Content-Type: application/json
+
+{
+  "email": "arthur@teste.com",
+  "senha": "arthur"
+}
