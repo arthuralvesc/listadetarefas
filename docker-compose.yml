@@ -4,16 +4,14 @@ services:
     image: postgres:latest
     restart: unless-stopped
     environment:
-      # Variáveis que o container do Postgres usa para se auto-configurar
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      # O banco 'postgres' é o banco padrão para conexão inicial
       POSTGRES_DB: postgres 
     volumes:
       - pgdata:/var/lib/postgresql
       - ./init-db:/docker-entrypoint-initdb.d 
     ports:
-      - "5432:5432" # Porta padrão para facilitar o acesso local
+      - "5432:5432"
     networks:
       - lista-de-tarefas-network
 
@@ -22,7 +20,6 @@ services:
       context: ./lista-de-tarefas-usuarios
       dockerfile: Dockerfile
     container_name: usuarios
-    # Mantemos os ports para o Nginx conseguir falar com o container
     ports:
       - "8081:8080"
     environment:
