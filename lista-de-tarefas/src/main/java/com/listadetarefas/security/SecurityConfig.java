@@ -10,27 +10,25 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableWebSecurity // Adicione esta anotação se não tiver
+@EnableWebSecurity
 public class SecurityConfig {
 
     private final SecurityFilter securityFilter;
 
     public SecurityConfig(SecurityFilter securityFilter) {
         this.securityFilter = securityFilter;
-        System.out.println(">>>> SECURITY CONFIG CARREGADO COM SUCESSO! <<<<");
     }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
-                .csrf(AbstractHttpConfigurer::disable) // Desabilita para não barrar POSTs
-                .httpBasic(AbstractHttpConfigurer::disable) // ADICIONE ESTA LINHA PARA MATAR O BASIC AUTH
+                .csrf(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // API sem estado
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().authenticated() // Tudo exige token
+                        .anyRequest().authenticated()
                 )
-                // É aqui que o seu filtro entra na corrente!
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }

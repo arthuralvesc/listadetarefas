@@ -51,8 +51,6 @@ public class TarefaService {
     @Transactional
     public TarefaResponseDTO criarTarefa(TarefaCreateRequestDTO request, Long usuarioId) {
 
-        System.out.println(">>>> DEBUG: O ID que chegou no Service foi: " + usuarioId);
-
         Tarefa novaTarefa = new Tarefa();
         novaTarefa.setNome(request.nome());
         novaTarefa.setStatus(Status.NAO_CONCLUIDA);

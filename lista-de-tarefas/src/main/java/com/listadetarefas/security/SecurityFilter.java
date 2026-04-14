@@ -26,7 +26,6 @@ public class SecurityFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
-
         var token = recuperarToken(request);
 
         if (token == null) {
@@ -40,10 +39,9 @@ public class SecurityFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-        var authentication = new UsernamePasswordAuthenticationToken(usuarioId, null, Collections.emptyList());
+        var authentication = new UsernamePasswordAuthenticationToken(usuarioId, null, Collections.emptyList()); // colocar roles aqui quando existirem
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // Segue o fluxo informando ao Spring que este usuário tem acesso
         filterChain.doFilter(request, response);
     }
 
