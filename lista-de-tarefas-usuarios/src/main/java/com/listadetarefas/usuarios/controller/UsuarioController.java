@@ -4,8 +4,11 @@ import com.listadetarefas.usuarios.dto.UsuarioRequestDTO;
 import com.listadetarefas.usuarios.dto.UsuarioResponseDTO;
 import com.listadetarefas.usuarios.service.UsuarioService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -20,7 +23,8 @@ public class UsuarioController {
 
     @PostMapping
     public ResponseEntity<UsuarioResponseDTO> cadastrarUsuario(@RequestBody @Valid UsuarioRequestDTO dto) {
-        return ResponseEntity.ok(service.criarUsuario(dto));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(service.criarUsuario(dto));
     }
 
     @GetMapping
