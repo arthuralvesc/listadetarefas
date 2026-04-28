@@ -15,6 +15,8 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.amqp.rabbit.core.RabbitOperations;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
@@ -32,6 +34,9 @@ class UsuarioServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private RabbitTemplate rabbitTemplate;
 
     @InjectMocks
     private UsuarioService usuarioService;
@@ -60,7 +65,6 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Deve criptografar a senha, salvar e retornar o DTO")
         void deveCriarUsuarioComSucesso() {
-            // Dado que (Given)
             when(passwordEncoder.encode(requestDTO.senha())).thenReturn("hash_da_senha_aqui");
             when(repository.save(any(Usuario.class))).thenReturn(usuarioMock);
 

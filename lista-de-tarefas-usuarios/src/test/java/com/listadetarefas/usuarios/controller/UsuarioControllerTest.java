@@ -10,6 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -43,6 +44,9 @@ class UsuarioControllerTest {
     @MockBean
     private SecurityFilter securityFilter;
 
+    @MockBean
+    private RabbitTemplate rabbitTemplate;
+
     private UsuarioRequestDTO requestDTO;
     private UsuarioResponseDTO responseDTO;
 
@@ -57,7 +61,7 @@ class UsuarioControllerTest {
     class CadastroDeUsuarios {
 
         @Test
-        @DisplayName("Deve retornar 200 OK e o DTO salvo quando os dados forem válidos")
+        @DisplayName("Deve retornar 201 Created e o DTO salvo quando os dados forem válidos")
         void deveCadastrarUsuarioComSucesso() throws Exception {
             when(usuarioService.criarUsuario(any(UsuarioRequestDTO.class))).thenReturn(responseDTO);
 
@@ -65,7 +69,7 @@ class UsuarioControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(requestDTO)))
 
-                    .andExpect(status().isOk())
+                    .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").value(1L))
                     .andExpect(jsonPath("$.nome").value("Arthur"))
                     .andExpect(jsonPath("$.email").value("arthur@exemplo.com"));

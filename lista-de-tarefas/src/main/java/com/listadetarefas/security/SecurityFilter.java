@@ -39,7 +39,7 @@ public class SecurityFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-        var authentication = new UsernamePasswordAuthenticationToken(usuarioId, null, Collections.emptyList()); // colocar roles aqui quando existirem
+        var authentication = new UsernamePasswordAuthenticationToken(usuarioId, null, Collections.emptyList());
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         filterChain.doFilter(request, response);

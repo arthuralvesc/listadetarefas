@@ -1,6 +1,7 @@
 package com.listadetarefas.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.listadetarefas.client.UsuarioClient;
 import com.listadetarefas.dto.TarefaCreateRequestDTO;
 import com.listadetarefas.dto.TarefaResponseDTO;
 import com.listadetarefas.dto.TarefaUpdateRequestDTO;
@@ -13,10 +14,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -47,6 +50,15 @@ class TarefaControllerTest {
 
     @MockBean
     private SecurityFilter securityFilter;
+
+    @MockBean
+    private UsuarioClient usuarioClient;
+
+    @MockBean
+    private RabbitTemplate rabbitTemplate;
+
+    @MockBean
+    private RedisConnectionFactory redisConnectionFactory;
 
     private final Long USUARIO_LOGADO_ID = 1L;
     private TarefaResponseDTO responseDTO;
@@ -151,7 +163,7 @@ class TarefaControllerTest {
                     USUARIO_LOGADO_ID
             );
 
-            when(tarefaService.atualizarTarefaParcialmente(eq(100L), eq(USUARIO_LOGADO_ID), any(TarefaUpdateRequestDTO.class)))
+            when(tarefaService.atualizarTarefa(eq(100L), any(TarefaUpdateRequestDTO.class), eq(USUARIO_LOGADO_ID)))
                     .thenReturn(responseAtualizada);
 
             mockMvc.perform(put("/tarefas/100")

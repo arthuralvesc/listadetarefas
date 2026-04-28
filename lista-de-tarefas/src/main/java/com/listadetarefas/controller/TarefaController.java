@@ -56,7 +56,7 @@ public class TarefaController {
             @RequestBody @Valid TarefaUpdateRequestDTO request,
             @AuthenticationPrincipal Long usuarioId) {
 
-        return ResponseEntity.ok(tarefaService.atualizarTarefaParcialmente(id, usuarioId, request));
+        return ResponseEntity.ok(tarefaService.atualizarTarefa(id, request, usuarioId));
     }
 
     @DeleteMapping("/{id}")
