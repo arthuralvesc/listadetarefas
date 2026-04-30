@@ -3,6 +3,7 @@ package com.listadetarefas.usuarios.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.listadetarefas.usuarios.dto.UsuarioRequestDTO;
 import com.listadetarefas.usuarios.dto.UsuarioResponseDTO;
+import com.listadetarefas.usuarios.exception.EmailJaCadastradoException;
 import com.listadetarefas.usuarios.security.SecurityFilter;
 import com.listadetarefas.usuarios.service.UsuarioService;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,6 +74,21 @@ class UsuarioControllerTest {
                     .andExpect(jsonPath("$.id").value(1L))
                     .andExpect(jsonPath("$.nome").value("Arthur"))
                     .andExpect(jsonPath("$.email").value("arthur@exemplo.com"));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 409 Conflict quando o email já estiver cadastrado")
+        void deveRetornarConflitoQuandoEmailDuplicado() throws Exception {
+            when(usuarioService.criarUsuario(any(UsuarioRequestDTO.class)))
+                    .thenThrow(new EmailJaCadastradoException(requestDTO.email()));
+
+            mockMvc.perform(post("/usuarios")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(requestDTO)))
+
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.mensagem")
+                            .value("O email " + requestDTO.email() + " já está em uso no sistema."));
         }
     }
 

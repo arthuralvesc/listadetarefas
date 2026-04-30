@@ -11,6 +11,7 @@ import com.listadetarefas.usuarios.repository.UsuarioRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeanUtils;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -31,6 +32,10 @@ public class UsuarioService {
 
     @Transactional
     public UsuarioResponseDTO criarUsuario(UsuarioRequestDTO dto) {
+        if (repository.existsByEmail(dto.email())) {
+            throw new EmailJaCadastradoException(dto.email());
+        }
+
         Usuario usuario = new Usuario();
         usuario.setNome(dto.nome());
         usuario.setEmail(dto.email());
