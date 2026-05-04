@@ -91,7 +91,6 @@ class NotificacaoIntegrationTest {
     @Test
     @DisplayName("Fluxo Completo E2E: Deve ler mensagem de Usuário Criado da fila e enviar email")
     void deveProcessarNotificacaoDeNovoUsuarioComSucesso() {
-        // 1. Arrange
         UsuarioCriadoEvent evento = new UsuarioCriadoEvent(
                 99L,
                 "Arthur Carvalho",
@@ -100,7 +99,6 @@ class NotificacaoIntegrationTest {
 
         rabbitTemplate.convertAndSend("usuarios.v1.events", "", evento);
 
-        // 3. Assert
         await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
             verify(mailSender, times(1)).send(any(MimeMessage.class));
 

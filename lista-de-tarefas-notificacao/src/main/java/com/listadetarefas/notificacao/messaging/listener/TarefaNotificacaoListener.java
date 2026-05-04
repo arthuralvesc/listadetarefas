@@ -6,19 +6,22 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class TarefaNotificacaoListener {
 
     private final SmtpEmailService emailService;
 
+    private static final Logger logger = LoggerFactory.getLogger(TarefaNotificacaoListener.class);
+
     private record ConteudoEmail(String assunto, String corpo) {}
 
     @RabbitListener(queuesToDeclare = @org.springframework.amqp.rabbit.annotation.Queue(name = "fila.notificacoes", durable = "true"))
     public void processarNotificacaoTarefa(NotificacaoTarefaEvent evento) {
-        log.info("Recebendo evento do RabbitMQ: [{}] para a tarefa '{}'", evento.tipoEvento(), evento.tituloTarefa());
+        logger.info("Recebendo evento do RabbitMQ: [{}] para a tarefa '{}'", evento.tipoEvento(), evento.tituloTarefa());
 
         ConteudoEmail conteudo = montarConteudoDaMensagem(evento);
 
@@ -26,7 +29,13 @@ public class TarefaNotificacaoListener {
             return;
         }
 
-        executarEnvio(evento, conteudo);
+        try{
+            executarEnvio(evento, conteudo);
+        } catch (RuntimeException e) {
+            logger.error("Erro ao processar notificacao de nova tarefa para {}", evento.emailDestinatario(), e);
+            throw new RuntimeException(e);
+        }
+
     }
     private ConteudoEmail montarConteudoDaMensagem(NotificacaoTarefaEvent evento) {
         return switch (evento.tipoEvento()) {
@@ -46,7 +55,7 @@ public class TarefaNotificacaoListener {
                             evento.nomeUsuario(), evento.tituloTarefa())
             );
             default -> {
-                log.warn("Tipo de evento desconhecido ignorado: {}", evento.tipoEvento());
+                logger.warn("Tipo de evento desconhecido ignorado: {}", evento.tipoEvento());
                 yield null;
             }
         };
@@ -61,10 +70,10 @@ public class TarefaNotificacaoListener {
                     conteudo.assunto(),
                     conteudo.corpo()
             );
-            log.info("Processamento finalizado com sucesso para: {}", evento.emailDestinatario());
+            logger.info("Processamento finalizado com sucesso para: {}", evento.emailDestinatario());
 
         } catch (Exception e) {
-            log.error("Erro fatal ao processar a notificação para a tarefa '{}'", evento.tituloTarefa(), e);
+            logger.error("Erro fatal ao processar a notificação para a tarefa '{}'", evento.tituloTarefa(), e);
         }
     }
 }
