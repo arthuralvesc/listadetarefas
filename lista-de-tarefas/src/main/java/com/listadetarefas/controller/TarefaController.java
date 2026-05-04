@@ -13,12 +13,16 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/tarefas")
 public class TarefaController {
 
     private final TarefaService tarefaService;
+
+    private static final Logger logger = LoggerFactory.getLogger(TarefaController.class);
 
     public TarefaController(TarefaService tarefaService) {
         this.tarefaService = tarefaService;
@@ -29,8 +33,12 @@ public class TarefaController {
             @RequestBody @Valid TarefaCreateRequestDTO request,
             @AuthenticationPrincipal Long usuarioId) {
 
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(tarefaService.criarTarefa(request, usuarioId));
+        logger.info("Requisicao para criar tarefa '{}' para o usuario com ID {} recebida", request.nome(), usuarioId);
+
+        TarefaResponseDTO response = tarefaService.criarTarefa(request, usuarioId);
+
+        logger.info("Tarefa '{}' criada com sucesso. Tarefa ID: {}", response.nome(), response.id());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/{id}")
