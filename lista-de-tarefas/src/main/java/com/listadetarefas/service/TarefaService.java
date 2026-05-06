@@ -12,7 +12,7 @@ import com.listadetarefas.model.Prioridade;
 import com.listadetarefas.model.Status;
 import com.listadetarefas.model.Tarefa;
 import com.listadetarefas.repository.TarefaRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -29,8 +29,8 @@ import java.util.stream.Collectors;
 public class TarefaService {
 
     private final TarefaRepository tarefaRepository;
-    private final UsuarioClient usuarioClient;
     private final RabbitTemplate rabbitTemplate;
+    private final UsuarioIntegrationService usuarioIntegrationService;
 
     @Cacheable(value = "tarefas", key = "#usuarioId", condition = "#status == null && #prioridade == null")
     public List<TarefaResponseDTO> buscarTarefasPorStatusOuPrioridade(Long usuarioId, Status status, Prioridade prioridade) {
@@ -129,11 +129,11 @@ public class TarefaService {
 
     private void orquestrarNotificacao(Long usuarioId, String tipoEvento, String tituloTarefa) {
         try {
-            UsuarioDTO usuario = usuarioClient.buscarUsuarioPorId(usuarioId);
+            UsuarioDTO usuario = usuarioIntegrationService.buscarDetalhesUsuario(usuarioId);
 
             NotificacaoTarefaEvent evento = new NotificacaoTarefaEvent(
-                    usuario.email(),
-                    usuario.nome(),
+                    usuario.getEmail(),
+                    usuario.getNome(),
                     tipoEvento,
                     tituloTarefa
             );

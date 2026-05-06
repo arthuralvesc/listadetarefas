@@ -1,6 +1,5 @@
 package com.listadetarefas.service;
 
-import com.listadetarefas.client.UsuarioClient;
 import com.listadetarefas.config.RabbitMQConfig;
 import com.listadetarefas.dto.TarefaCreateRequestDTO;
 import com.listadetarefas.dto.TarefaResponseDTO;
@@ -36,8 +35,9 @@ class TarefaServiceTest {
     @Mock
     private TarefaRepository repository;
 
+    // 1. Mudança crucial: Mockamos o serviço de Integração (Resiliência) e não o Feign Client puro
     @Mock
-    private UsuarioClient usuarioClient;
+    private UsuarioIntegrationService usuarioIntegrationService;
 
     @Mock
     private RabbitTemplate rabbitTemplate;
@@ -64,7 +64,8 @@ class TarefaServiceTest {
             TarefaCreateRequestDTO request = new TarefaCreateRequestDTO("Estudar Java", Prioridade.ALTA);
             when(repository.save(any(Tarefa.class))).thenReturn(tarefaMock);
 
-            when(usuarioClient.buscarUsuarioPorId(USUARIO_ID)).thenReturn(usuarioMock);
+            // 2. Usando o método do novo serviço
+            when(usuarioIntegrationService.buscarDetalhesUsuario(USUARIO_ID)).thenReturn(usuarioMock);
 
             TarefaResponseDTO response = service.criarTarefa(request, USUARIO_ID);
 
@@ -73,8 +74,28 @@ class TarefaServiceTest {
             assertEquals(Status.NAO_CONCLUIDA, response.status());
 
             verify(repository, times(1)).save(any(Tarefa.class));
-
             verify(rabbitTemplate, times(1)).convertAndSend(eq(RabbitMQConfig.FILA_NOTIFICACOES), any(NotificacaoTarefaEvent.class));
+        }
+        @Test
+        @DisplayName("Deve capturar exceção e logar erro caso a orquestração da notificação falhe")
+        void deveCapturarExcecaoAoOrquestrarNotificacao() {
+            // Preparação (Arrange)
+            TarefaCreateRequestDTO request = new TarefaCreateRequestDTO("Estruturar backend do Basketpedia", Prioridade.ALTA);
+            when(repository.save(any(Tarefa.class))).thenReturn(tarefaMock);
+
+            // Forçamos o serviço de usuários a estourar um erro no meio da criação da tarefa
+            when(usuarioIntegrationService.buscarDetalhesUsuario(USUARIO_ID))
+                    .thenThrow(new RuntimeException("Simulação de falha catastrófica de rede"));
+
+            // Ação (Act)
+            TarefaResponseDTO response = service.criarTarefa(request, USUARIO_ID);
+
+            // Verificação (Assert)
+            assertNotNull(response, "A tarefa deve ser criada mesmo se a notificação falhar.");
+            assertEquals("Estudar Java", response.nome()); // Baseado no seu tarefaMock do setup
+
+            // Garantimos que a mensagem nunca chegou a ser enviada ao RabbitMQ
+            verify(rabbitTemplate, never()).convertAndSend(eq(RabbitMQConfig.FILA_NOTIFICACOES), any(NotificacaoTarefaEvent.class));
         }
     }
 
@@ -155,7 +176,7 @@ class TarefaServiceTest {
             when(repository.findById(100L)).thenReturn(Optional.of(tarefaMock));
             when(repository.save(any(Tarefa.class))).thenReturn(tarefaMock);
 
-            when(usuarioClient.buscarUsuarioPorId(USUARIO_ID)).thenReturn(usuarioMock);
+            when(usuarioIntegrationService.buscarDetalhesUsuario(USUARIO_ID)).thenReturn(usuarioMock);
 
             TarefaUpdateRequestDTO request = new TarefaUpdateRequestDTO("   ", Status.CONCLUIDA, null, USUARIO_ID);
 
@@ -185,7 +206,7 @@ class TarefaServiceTest {
             when(repository.findById(100L)).thenReturn(Optional.of(tarefaMock));
             when(repository.save(any(Tarefa.class))).thenReturn(tarefaMock);
 
-            when(usuarioClient.buscarUsuarioPorId(USUARIO_ID)).thenReturn(usuarioMock);
+            when(usuarioIntegrationService.buscarDetalhesUsuario(USUARIO_ID)).thenReturn(usuarioMock);
 
             TarefaUpdateRequestDTO request = new TarefaUpdateRequestDTO("Nome Atualizado", null, Prioridade.BAIXA, USUARIO_ID);
 
@@ -194,6 +215,9 @@ class TarefaServiceTest {
             assertEquals("Nome Atualizado", tarefaMock.getNome());
             assertEquals(Prioridade.BAIXA, tarefaMock.getPrioridade());
             verify(repository).save(tarefaMock);
+
+            // Verificação do RabbitMQ adicionada
+            verify(rabbitTemplate, times(1)).convertAndSend(eq(RabbitMQConfig.FILA_NOTIFICACOES), any(NotificacaoTarefaEvent.class));
         }
 
         @Test
@@ -202,7 +226,7 @@ class TarefaServiceTest {
             when(repository.findById(100L)).thenReturn(Optional.of(tarefaMock));
             when(repository.save(any(Tarefa.class))).thenReturn(tarefaMock);
 
-            when(usuarioClient.buscarUsuarioPorId(USUARIO_ID)).thenReturn(usuarioMock);
+            when(usuarioIntegrationService.buscarDetalhesUsuario(USUARIO_ID)).thenReturn(usuarioMock);
 
             TarefaUpdateRequestDTO request = new TarefaUpdateRequestDTO(null, Status.CONCLUIDA, null, USUARIO_ID);
 
@@ -211,6 +235,9 @@ class TarefaServiceTest {
             assertEquals("Estudar Java", response.nome());
             assertEquals(Status.CONCLUIDA, response.status());
             verify(repository).save(tarefaMock);
+
+            // Verificação do RabbitMQ adicionada
+            verify(rabbitTemplate, times(1)).convertAndSend(eq(RabbitMQConfig.FILA_NOTIFICACOES), any(NotificacaoTarefaEvent.class));
         }
 
         @Test
@@ -233,15 +260,14 @@ class TarefaServiceTest {
             when(repository.findById(100L)).thenReturn(Optional.of(tarefaMock));
             doNothing().when(repository).delete(tarefaMock);
 
-            // NOVO
-            when(usuarioClient.buscarUsuarioPorId(USUARIO_ID)).thenReturn(usuarioMock);
+            when(usuarioIntegrationService.buscarDetalhesUsuario(USUARIO_ID)).thenReturn(usuarioMock);
 
             service.deletarTarefa(100L, USUARIO_ID);
 
             verify(repository, times(1)).delete(tarefaMock);
-
             verify(rabbitTemplate, times(1)).convertAndSend(eq(RabbitMQConfig.FILA_NOTIFICACOES), any(NotificacaoTarefaEvent.class));
         }
+
         @Test
         @DisplayName("Deve negar o acesso a tarefa se o usuario não for o correto")
         void deveNegar() {

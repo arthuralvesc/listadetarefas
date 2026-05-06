@@ -14,6 +14,12 @@ services:
       - "5432:5432"
     networks:
       - lista-de-tarefas-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s 
 
   usuarios:
     build:
@@ -32,7 +38,8 @@ services:
       - JPA_DDL_AUTO=${JPA_DDL_AUTO}
       - SPRING_RABBITMQ_HOST=rabbitmq
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - lista-de-tarefas-network
 
@@ -55,9 +62,12 @@ services:
       - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST}
       - SPRING_REDIS_HOST=${REDIS_HOST}
     depends_on:
-      - db
-      - rabbitmq
-      - redis
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+      redis:
+        condition: service_started
     networks:
       - lista-de-tarefas-network
 
