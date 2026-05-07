@@ -71,8 +71,7 @@ public class TarefaService {
     public TarefaResponseDTO criarTarefa(TarefaCreateRequestDTO request, Long usuarioId) {
         Tarefa novaTarefa = persistirNovaTarefa(request, usuarioId);
 
-        // orquestrarNotificacao(usuarioId, "TAREFA_CRIADA", novaTarefa.getNome());
-        // linha comentada durante stress test
+        orquestrarNotificacao(usuarioId, "TAREFA_CRIADA", novaTarefa.getNome());
 
         return converterParaDTO(novaTarefa);
     }
