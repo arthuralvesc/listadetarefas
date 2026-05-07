@@ -3,13 +3,13 @@ import { check, sleep } from 'k6';
 
 // Configuração do teste: Simular 50 usuários simultâneos bombardeando a API por 30 segundos
 export let options = {
-    vus: 100, // Virtual Users
+    vus: 5, // Virtual Users
     duration: '10s',
 };
 
 export default function () {
     const token = __ENV.TOKEN;
-    const url = 'http://tarefas:8080/tarefas'; // Ajuste sua URL e porta
+    const url = 'http://18.191.246.79:8080/tarefas'; // Ajuste sua URL e porta
     
     const payload = JSON.stringify({
         nome: `Tarefa de Teste ${__VU} - ${__ITER}`, // Nomes dinâmicos
@@ -35,4 +35,4 @@ export default function () {
     sleep(Math.random()); 
 }
 
-  // docker run --rm -i --network gftjava_lista-de-tarefas-network -e TOKEN="" grafana/k6 run - <stress-test-post.js
+  // docker run --rm -i --network gftjava_lista-de-tarefas-network -e TOKEN="eyJhbGciOiJIUzM4NCJ9.eyJpc3MiOiJsaXN0YS1kZS10YXJlZmFzLWFwaSIsInN1YiI6ImQuc2NocnV0ZUBkdW5kZXJtaWZmbGluLmNvbSIsImlkIjoyLCJpYXQiOjE3NzgxODEzNDQsImV4cCI6MTc3ODE4ODU0NH0.9ntscEFdXOSvfJwKVl_Wt0bFaFEa7bH5ukej6w6HGdqktLZiG_kzfieULa6hkaP2" grafana/k6 run - <stress-test-post.js
