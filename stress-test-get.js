@@ -22,4 +22,4 @@ export default function () {
   sleep(0.1);
 }
 
-  // docker run --rm -i --network gftjava_lista-de-tarefas-network -e TOKEN="" grafana/k6 run - <stress-test.js
+  // docker run --rm -i --network gftjava_lista-de-tarefas-network -e TOKEN="" grafana/k6 run - <stress-test-get.js

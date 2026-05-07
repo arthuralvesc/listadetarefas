@@ -50,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Testcontainers
-@AutoConfigureWireMock(port = 8081) // O Servidor Falso da API de Usuários
+@AutoConfigureWireMock(port = 8083) // O Servidor Falso da API de Usuários
 class TarefaIntegrationTest {
 
     @Container

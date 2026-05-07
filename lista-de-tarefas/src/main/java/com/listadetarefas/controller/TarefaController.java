@@ -7,9 +7,11 @@ import com.listadetarefas.model.Prioridade;
 import com.listadetarefas.model.Status;
 import com.listadetarefas.service.TarefaService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/tarefas")
+@Validated
 public class TarefaController {
 
     private final TarefaService tarefaService;

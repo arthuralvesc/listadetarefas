@@ -1,6 +1,5 @@
 package com.listadetarefas.service;
 
-import com.listadetarefas.client.UsuarioClient;
 import com.listadetarefas.config.RabbitMQConfig;
 import com.listadetarefas.dto.TarefaCreateRequestDTO;
 import com.listadetarefas.dto.TarefaUpdateRequestDTO;
@@ -19,8 +18,13 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -63,7 +67,6 @@ public class TarefaService {
         return converterParaDTO(tarefa);
     }
 
-    @Transactional
     @CacheEvict(value = "tarefas", key = "#usuarioId")
     public TarefaResponseDTO criarTarefa(TarefaCreateRequestDTO request, Long usuarioId) {
         Tarefa novaTarefa = persistirNovaTarefa(request, usuarioId);
@@ -116,7 +119,6 @@ public class TarefaService {
 
         orquestrarNotificacao(usuarioId, "TAREFA_DELETADA", nomeTarefaDeletada);
     }
-
 
     private Tarefa persistirNovaTarefa(TarefaCreateRequestDTO request, Long usuarioId) {
         Tarefa tarefa = new Tarefa();
