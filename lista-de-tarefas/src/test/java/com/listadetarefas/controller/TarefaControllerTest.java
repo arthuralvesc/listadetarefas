@@ -3,6 +3,7 @@ package com.listadetarefas.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.listadetarefas.client.UsuarioClient;
 import com.listadetarefas.dto.TarefaCreateRequestDTO;
+import com.listadetarefas.dto.TarefaCursorResponseDTO;
 import com.listadetarefas.dto.TarefaResponseDTO;
 import com.listadetarefas.dto.TarefaUpdateRequestDTO;
 import com.listadetarefas.model.Prioridade;
@@ -109,23 +110,66 @@ class TarefaControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /tarefas - Listagem e Filtros")
+    @DisplayName("GET /tarefas - Listagem e Filtros (Cursor Pagination)")
     class ListagemDeTarefas {
 
         @Test
-        @DisplayName("Deve retornar 200 OK e a lista filtrada por status e prioridade")
+        @DisplayName("Deve retornar a primeira página filtrada (sem cursor e com size padrão)")
         void deveListarTarefasComFiltros() throws Exception {
-            when(tarefaService.buscarTarefasPorStatusOuPrioridade(USUARIO_LOGADO_ID, Status.NAO_CONCLUIDA, Prioridade.ALTA))
-                    .thenReturn(List.of(responseDTO));
+            String cursorEsperado = "ZXlKcFpDSTZNVFEz...";
+            TarefaCursorResponseDTO mockResponse = new TarefaCursorResponseDTO(
+                    List.of(responseDTO),
+                    cursorEsperado,
+                    true
+            );
+
+            when(tarefaService.buscarTarefas(
+                    eq(USUARIO_LOGADO_ID),
+                    eq(Status.NAO_CONCLUIDA),
+                    eq(Prioridade.ALTA),
+                    isNull(),
+                    eq(10)
+            )).thenReturn(mockResponse);
 
             mockMvc.perform(get("/tarefas")
                             .param("status", "NAO_CONCLUIDA")
                             .param("prioridade", "ALTA")
                             .contentType(MediaType.APPLICATION_JSON))
-
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.length()").value(1))
-                    .andExpect(jsonPath("$[0].nome").value("Estudar Spring Boot e Testes"));
+                    .andExpect(jsonPath("$.data").isArray())
+                    .andExpect(jsonPath("$.data.length()").value(1))
+                    .andExpect(jsonPath("$.data[0].nome").value("Estudar Spring Boot e Testes"))
+                    .andExpect(jsonPath("$.hasNext").value(true))
+                    .andExpect(jsonPath("$.nextCursor").value(cursorEsperado));
+        }
+
+        @Test
+        @DisplayName("Deve retornar a próxima página quando receber um cursor e tamanho customizado")
+        void deveListarTarefasComCursor() throws Exception {
+            String cursorEnviadoPeloFront = "ZXlKcFpDSTZNVFEz...";
+
+            TarefaCursorResponseDTO mockResponse = new TarefaCursorResponseDTO(
+                    List.of(responseDTO),
+                    null,
+                    false
+            );
+
+            when(tarefaService.buscarTarefas(
+                    eq(USUARIO_LOGADO_ID),
+                    isNull(),
+                    isNull(),
+                    eq(cursorEnviadoPeloFront),
+                    eq(5)
+            )).thenReturn(mockResponse);
+
+            mockMvc.perform(get("/tarefas")
+                            .param("cursor", cursorEnviadoPeloFront)
+                            .param("size", "5")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.length()").value(1))
+                    .andExpect(jsonPath("$.hasNext").value(false))
+                    .andExpect(jsonPath("$.nextCursor").doesNotExist());
         }
     }
 

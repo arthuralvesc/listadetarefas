@@ -1,16 +1,14 @@
 package com.listadetarefas.service;
 
 import com.listadetarefas.config.RabbitMQConfig;
-import com.listadetarefas.dto.TarefaCreateRequestDTO;
-import com.listadetarefas.dto.TarefaResponseDTO;
-import com.listadetarefas.dto.TarefaUpdateRequestDTO;
-import com.listadetarefas.dto.UsuarioDTO;
+import com.listadetarefas.dto.*;
 import com.listadetarefas.event.NotificacaoTarefaEvent;
 import com.listadetarefas.model.Prioridade;
 import com.listadetarefas.model.Status;
 import com.listadetarefas.exception.TarefaNaoEncontradaException;
 import com.listadetarefas.model.Tarefa;
 import com.listadetarefas.repository.TarefaRepository;
+import com.listadetarefas.util.CursorUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,14 +18,24 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.springframework.data.domain.KeysetScrollPosition;
+import org.springframework.data.domain.ScrollPosition;
+import org.springframework.data.domain.Window;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.eq;
 
 @ExtendWith(MockitoExtension.class)
 class TarefaServiceTest {
@@ -41,6 +49,9 @@ class TarefaServiceTest {
 
     @Mock
     private RabbitTemplate rabbitTemplate;
+
+    @Mock
+    private CursorUtil cursorUtil;
 
     @InjectMocks
     private TarefaService service;
@@ -125,44 +136,55 @@ class TarefaServiceTest {
     }
 
     @Nested
-    @DisplayName("Busca com Filtros Dinâmicos")
+    @DisplayName("Busca com Filtros Dinâmicos e Paginação (Cursor API)")
     class BuscaDinamica {
 
         @Test
-        @DisplayName("Deve buscar por Status E Prioridade")
-        void buscarPorStatusEPrioridade() {
-            when(repository.findByUsuarioIdAndStatusAndPrioridade(USUARIO_ID, Status.NAO_CONCLUIDA, Prioridade.ALTA))
-                    .thenReturn(List.of(tarefaMock));
+        @DisplayName("Deve buscar a primeira página com filtros (Cursor Nulo)")
+        void buscarPrimeiraPaginaComFiltros() {
+            Window<Tarefa> mockWindow = mock(Window.class);
+            when(mockWindow.getContent()).thenReturn(List.of(tarefaMock));
+            when(mockWindow.hasNext()).thenReturn(false);
 
-            List<TarefaResponseDTO> result = service.buscarTarefasPorStatusOuPrioridade(USUARIO_ID, Status.NAO_CONCLUIDA, Prioridade.ALTA);
-            assertEquals(1, result.size());
+            when(repository.findBy(any(Specification.class), any())).thenReturn(mockWindow);
+
+            TarefaCursorResponseDTO response = service.buscarTarefas(USUARIO_ID, Status.NAO_CONCLUIDA, Prioridade.ALTA, null, 10);
+
+            assertNotNull(response);
+            assertEquals(1, response.data().size());
+            assertFalse(response.hasNext());
+            assertNull(response.nextCursor());
+
+            verify(cursorUtil, never()).decodificarCursor(anyString());
         }
 
         @Test
-        @DisplayName("Deve buscar apenas por Status")
-        void buscarPorStatus() {
-            when(repository.findByUsuarioIdAndStatus(USUARIO_ID, Status.NAO_CONCLUIDA)).thenReturn(List.of(tarefaMock));
+        @DisplayName("Deve decodificar o cursor e buscar a próxima página")
+        void buscarProximaPaginaComCursor() {
+            String cursorBase64 = "ZXlKcFpDSTZNVFEz...";
+            Map<String, Object> cursorValues = Map.of("id", 100L);
 
-            List<TarefaResponseDTO> result = service.buscarTarefasPorStatusOuPrioridade(USUARIO_ID, Status.NAO_CONCLUIDA, null);
-            assertEquals(1, result.size());
-        }
+            when(cursorUtil.resolverScrollPosition(cursorBase64)).thenReturn(ScrollPosition.of(cursorValues, ScrollPosition.Direction.FORWARD));
+            when(cursorUtil.codificarCursor(anyMap())).thenReturn("NOVO_CURSOR_BASE64");
 
-        @Test
-        @DisplayName("Deve buscar apenas por Prioridade")
-        void buscarPorPrioridade() {
-            when(repository.findByUsuarioIdAndPrioridade(USUARIO_ID, Prioridade.ALTA)).thenReturn(List.of(tarefaMock));
+            Window<Tarefa> mockWindow = mock(Window.class);
+            when(mockWindow.getContent()).thenReturn(List.of(tarefaMock));
+            when(mockWindow.hasNext()).thenReturn(true);
 
-            List<TarefaResponseDTO> result = service.buscarTarefasPorStatusOuPrioridade(USUARIO_ID, null, Prioridade.ALTA);
-            assertEquals(1, result.size());
-        }
+            KeysetScrollPosition mockPosition = mock(KeysetScrollPosition.class);
+            when(mockPosition.getKeys()).thenReturn(cursorValues);
+            when(mockWindow.positionAt(0)).thenReturn(mockPosition);
 
-        @Test
-        @DisplayName("Deve buscar todos do usuário quando não houver filtros")
-        void buscarSemFiltros() {
-            when(repository.findByUsuarioId(USUARIO_ID)).thenReturn(List.of(tarefaMock));
+            when(repository.findBy(any(Specification.class), any())).thenReturn(mockWindow);
 
-            List<TarefaResponseDTO> result = service.buscarTarefasPorStatusOuPrioridade(USUARIO_ID, null, null);
-            assertEquals(1, result.size());
+
+            TarefaCursorResponseDTO response = service.buscarTarefas(USUARIO_ID, null, null, cursorBase64, 10);
+
+            assertNotNull(response);
+            assertTrue(response.hasNext());
+            assertEquals("NOVO_CURSOR_BASE64", response.nextCursor());
+
+            verify(cursorUtil, times(1)).resolverScrollPosition(cursorBase64);
         }
     }
 

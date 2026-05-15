@@ -1,6 +1,7 @@
 package com.listadetarefas.controller;
 
 import com.listadetarefas.dto.TarefaCreateRequestDTO;
+import com.listadetarefas.dto.TarefaCursorResponseDTO;
 import com.listadetarefas.dto.TarefaResponseDTO;
 import com.listadetarefas.dto.TarefaUpdateRequestDTO;
 import com.listadetarefas.model.Prioridade;
@@ -73,18 +74,19 @@ public class TarefaController {
         return ResponseEntity.ok(tarefaService.buscarPorId(id, usuarioId));
     }
 
-    @Operation(summary = "Lista tarefas", description = "Busca tarefas pertencentes ao usuário")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Tarefa(s) encontrada(s)"),
-            @ApiResponse(responseCode = "401", description = "Usuário não autenticado no sistema"),
-            @ApiResponse(responseCode = "500", description = "Falha interna no servidor ou timeout")})
+    @Operation(summary = "Lista tarefas com filtros e paginação por cursor",
+            description = "Retorna uma janela de tarefas. Use o campo 'nextCursor' para carregar a próxima página.")
     @GetMapping
-    public ResponseEntity<List<TarefaResponseDTO>> listar(
+    public ResponseEntity<TarefaCursorResponseDTO> listar(
             @Parameter(hidden = true) @AuthenticationPrincipal Long usuarioId,
             @RequestParam(required = false) Status status,
-            @RequestParam(required = false) Prioridade prioridade) {
+            @RequestParam(required = false) Prioridade prioridade,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "10") int size) {
 
-        return ResponseEntity.ok(tarefaService.buscarTarefasPorStatusOuPrioridade(usuarioId, status, prioridade));
+        var response = tarefaService.buscarTarefas(usuarioId, status, prioridade, cursor, size);
+
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Atualiza tarefa", description = "Atualiza tarefa com campos especificados. Campos não enviados ou nulos não serão alterados.")
